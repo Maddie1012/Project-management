@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:  # ← Этот ключ обязателен!
+  api:
+    build: ./server
+    ports:
+      - "8080:8080"
+  
+  client:
+    build: ./frontend
+    ports:
+      - "3000:3000"
