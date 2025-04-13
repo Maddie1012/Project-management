@@ -180,9 +180,11 @@ function IssuesPage() {
     }
   };
 
-
+  // Создание новой задачи
+// Создание новой задачи
   const handleCreateTask = async () => {
     try {
+      // Находим первую задачу с таким же boardName, чтобы получить boardId
       const referenceTask = tasks.find(task => task.boardName === formData.boardName);
       
       if (!referenceTask) {
@@ -194,7 +196,7 @@ function IssuesPage() {
         description: formData.description,
         priority: formData.priority,
         assigneeId: formData.assigneeId,
-        boardId: referenceTask.boardId, /
+        boardId: referenceTask.boardId, // Используем boardId из существующей задачи
       };
       console.log(payload)
       const response = await axios.post(
@@ -211,8 +213,8 @@ function IssuesPage() {
       const newTask = {
         ...response.data,
         assignee: users.find(user => user.id === formData.assigneeId) || null,
-        boardName: formData.boardName, 
-        boardId: referenceTask.boardId, 
+        boardName: formData.boardName, // Сохраняем для отображения в UI
+        boardId: referenceTask.boardId, // Добавляем boardId
       };
 
       setTasks(prevTasks => [...prevTasks, newTask]);
