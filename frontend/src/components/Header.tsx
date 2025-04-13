@@ -1,16 +1,10 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { AppBar, Toolbar, Button, Box } from '@mui/material';
 
-export default function Header({onCreateClick}) {
-  const navigate = useNavigate();
-
+export default function Header({ onCreateClick }) {
   return (
     <AppBar position="static">
-      <Toolbar
-        sx={{
-          backgroundColor: ' #292929',
-        }}
-      >
+      <Toolbar sx={{ backgroundColor: '#292929' }}>
         <Box sx={{ flexGrow: 1, display: 'flex', gap: 2 }}>
           <Box
             component={Link}
@@ -20,7 +14,7 @@ export default function Header({onCreateClick}) {
               textDecoration: 'none',
               padding: '8px 12px',
               borderRadius: '4px',
-              '&:hover': { color: ' #ff6163' },
+              '&:hover': { color: '#ff6163' },
             }}
           >
             Все задачи
@@ -34,7 +28,7 @@ export default function Header({onCreateClick}) {
               textDecoration: 'none',
               padding: '8px 12px',
               borderRadius: '4px',
-              '&:hover': { color: ' #ff6163' },
+              '&:hover': { color: '#ff6163' },
             }}
           >
             Проекты
@@ -43,13 +37,10 @@ export default function Header({onCreateClick}) {
         <Button
           color="secondary"
           variant="contained"
-          onClick={() => {
-            onCreateClick(); // Вызываем функцию создания
-          }}
+          onClick={onCreateClick}
           sx={{
             backgroundColor: '#00aaff',
             '&:hover': { backgroundColor: '#0099f7' },
-            '&:active': { backgroundColor: '#008aed' },
           }}
         >
           Создать задачу

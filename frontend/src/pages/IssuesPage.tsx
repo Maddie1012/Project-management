@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import axios from 'axios';
-import { getTasks, getUsers } from '../api/metods';
 import {
   Box,
   Card,
@@ -17,14 +16,11 @@ import {
   InputLabel,
   MenuItem,
   InputAdornment,
-  Fab,
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
 import TaskModal from '../components/TaskModal';
 
-function IssuesPage({ modalOpen = false, onModalClose }) {
+function IssuesPage() {
   const location = useLocation();
-  const isIssuesPage = location.pathname === '/issues';
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -44,26 +40,14 @@ function IssuesPage({ modalOpen = false, onModalClose }) {
     status: '',
     board: '',
   });
-  const [modalMode, setModalMode] = useState('edit');
 
-
-  useEffect(() => {
-    if (modalOpen) {
-      handleCreateClick();
-    }
-  }, [modalOpen]);
-
-  const handleCloseModal = () => {
-    setOpenModal(false);
-    onModalClose?.(); // Вызываем колбэк закрытия
-  };
-
-  // Загрузка задач
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const data = await getTasks();
-        setTasks(data);
+        const response = await axios.get('http://localhost:8080/api/v1/tasks', {
+          headers: { Accept: 'application/json' }
+        });
+        setTasks(response.data.data);
         setLoading(false);
       } catch (err) {
         setError(err.message);
@@ -73,12 +57,13 @@ function IssuesPage({ modalOpen = false, onModalClose }) {
     fetchTasks();
   }, []);
 
-  // Загрузка пользователей
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const data = await getUsers();
-        setUsers(data);
+        const response = await axios.get('http://localhost:8080/api/v1/users', {
+          headers: { Accept: 'application/json' }
+        });
+        setUsers(response.data.data);
       } catch (err) {
         console.error('Ошибка загрузки пользователей:', err);
       }
@@ -96,28 +81,45 @@ function IssuesPage({ modalOpen = false, onModalClose }) {
       assigneeId: task.assignee?.id || '',
       boardName: task.boardName || '',
     });
-    setModalMode('edit');
     setOpenModal(true);
   };
 
-  const handleCreateClick = () => {
-    setSelectedTask(null);
-    setFormData({
-      title: '',
-      description: '',
-      priority: '',
-      status: '',
-      assigneeId: '',
-      boardName: '',
-    });
-    setModalMode('create');
-    setOpenModal(true);
+  const handleCloseModal = () => {
+    setOpenModal(false);
   };
-
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleUpdateTask = async () => {
+    try {
+      await axios.put(
+        `http://localhost:8080/api/v1/tasks/update/${selectedTask.id}`,
+        {
+          title: formData.title,
+          description: formData.description,
+          priority: formData.priority,
+          status: formData.status,
+          assigneeId: formData.assigneeId,
+        },
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+
+      setTasks(prevTasks => prevTasks.map(task => 
+        task.id === selectedTask.id ? { 
+          ...task, 
+          ...formData,
+          assignee: users.find(u => u.id === formData.assigneeId) 
+        } : task
+      ));
+
+      handleCloseModal();
+    } catch (error) {
+      console.error("Ошибка при обновлении задачи:", error);
+      alert("Не удалось обновить задачу");
+    }
   };
 
   const handleSearchChange = (e) => {
@@ -129,7 +131,6 @@ function IssuesPage({ modalOpen = false, onModalClose }) {
     setFilters(prev => ({ ...prev, [name]: value }));
   };
 
-  // Фильтрация задач
   const filteredTasks = tasks.filter(task => {
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = 
@@ -145,101 +146,6 @@ function IssuesPage({ modalOpen = false, onModalClose }) {
     
     return matchesSearch && matchesStatus && matchesBoard;
   });
-
-  // Обновление задачи
-  const handleUpdateTask = async () => {
-    try {
-      const payload = {
-        title: formData.title,
-        description: formData.description,
-        priority: formData.priority,
-        status: formData.status,
-        assigneeId: formData.assigneeId,
-      };
-
-      await axios.put(
-        `http://localhost:8080/api/v1/tasks/update/${selectedTask.id}`,
-        payload,
-        {
-          headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      const updatedTask = {
-        ...selectedTask,
-        ...payload,
-        boardName: formData.boardName,
-        assignee: users.find(user => user.id === formData.assigneeId) || null,
-      };
-
-      setTasks(prevTasks => 
-        prevTasks.map(task => 
-          task.id === updatedTask.id ? updatedTask : task
-        )
-      );
-
-      setOpenModal(false);
-    } catch (error) {
-      console.error('Ошибка при обновлении задачи:', error);
-      setError(error.message);
-      alert('Произошла ошибка при обновлении задачи');
-    }
-  };
-
-
-  const handleCreateTask = async () => {
-    try {
-      const referenceTask = tasks.find(task => task.boardName === formData.boardName);
-      
-      if (!referenceTask) {
-        throw new Error('Не удалось найти boardId для выбранного проекта');
-      }
-  
-      const payload = {
-        title: formData.title,
-        description: formData.description,
-        priority: formData.priority,
-        assigneeId: formData.assigneeId,
-        boardId: referenceTask.boardId,
-        status: formData.status || 'Backlog',
-      };
-  
-      const response = await axios.post(
-        'http://localhost:8080/api/v1/tasks/create',
-        payload,
-        {
-          headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-  
-      const newTask = {
-        ...response.data,
-        id: response.data.id || Date.now(),
-        title: formData.title,
-        description: formData.description,
-        priority: formData.priority,
-        status: formData.status || 'Backlog',
-        assignee: users.find(user => user.id === formData.assigneeId) || null,
-        boardName: formData.boardName,
-        boardId: referenceTask.boardId,
-        createdAt: new Date().toISOString(), 
-      };
-  
-      setTasks(prevTasks => [...prevTasks, newTask]);
-      setOpenModal(false);
-      onModalClose?.();
-    } catch (error) {
-      console.error('Ошибка при создании задачи:', error);
-      setError(error.message);
-      alert(`Произошла ошибка при создании задачи: ${error.message}`);
-    }
-  };
 
   if (loading) {
     return (
@@ -258,7 +164,7 @@ function IssuesPage({ modalOpen = false, onModalClose }) {
   }
 
   return (
-    <Container sx={{ py: 4, maxWidth: 'md', position: 'relative' }}>
+    <Container sx={{ py: 4, maxWidth: 'md' }}>
       <Box sx={{ mb: 4 }}>
         <TextField
           label="Поиск по задачам и исполнителям"
@@ -372,19 +278,6 @@ function IssuesPage({ modalOpen = false, onModalClose }) {
         </Typography>
       )}
 
-      <Fab
-        color="primary"
-        aria-label="add"
-        sx={{
-          position: 'fixed',
-          bottom: 32,
-          right: 32,
-        }}
-        onClick={handleCreateClick}
-      >
-        <AddIcon />
-      </Fab>
-
       <TaskModal
         open={openModal}
         onClose={handleCloseModal}
@@ -393,9 +286,8 @@ function IssuesPage({ modalOpen = false, onModalClose }) {
         users={users}
         onInputChange={handleInputChange}
         onUpdateTask={handleUpdateTask}
-        onCreateTask={handleCreateTask}
-        isIssuesPage={isIssuesPage}
-        mode={modalMode}
+        isIssuesPage={true}
+        mode="edit"
       />
     </Container>
   );
