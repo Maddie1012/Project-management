@@ -237,7 +237,7 @@ const TaskModal = ({
                 variant="outlined"
                 color="secondary"
                 onClick={() => {
-                  window.location.href = `/boards/${task.boardId}?boardName=${encodeURIComponent(task.boardName)}`;
+                  window.location.href = `/boards/${task.boardId}?boardName=${encodeURIComponent(task.boardName)}&taskId=${task.id}`;
                 }}
                 sx={{ ml: 2 }}
               >

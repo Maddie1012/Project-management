@@ -20,10 +20,12 @@ function BoardPage({ modalOpen = false, onModalClose }) {
   const location = useLocation();
   const isIssuesPage = location.pathname === '/issues';
   const queryParams = new URLSearchParams(location.search);
+  const taskIdFromUrl = queryParams.get('taskId');
   const boardNameFromUrl = queryParams.get('boardName');
   const [board, setBoard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [manuallyClosed, setManuallyClosed] = useState(false);
   const [modalMode, setModalMode] = useState('edit');
   const [selectedTask, setSelectedTask] = useState(null);
   const [openModal, setOpenModal] = useState(false);
@@ -35,6 +37,15 @@ function BoardPage({ modalOpen = false, onModalClose }) {
     assigneeId: '',
     boardName: '',
   });
+
+  useEffect(() => {
+    if (taskIdFromUrl && board && !manuallyClosed) {
+      const taskToOpen = board.find(task => task.id === parseInt(taskIdFromUrl));
+      if (taskToOpen) {
+        handleCardClick(taskToOpen);
+      }
+    }
+  }, [board, taskIdFromUrl, manuallyClosed]);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -108,6 +119,12 @@ function BoardPage({ modalOpen = false, onModalClose }) {
 
   const handleCloseModal = () => {
     setOpenModal(false);
+    setManuallyClosed(true);
+    // Очищаем taskId из URL
+    const params = new URLSearchParams(location.search);
+    params.delete('taskId');
+    window.history.replaceState({}, '', `${location.pathname}?${params}`);
+    onModalClose?.();
   };
 
   const handleInputChange = (e) => {
@@ -116,53 +133,52 @@ function BoardPage({ modalOpen = false, onModalClose }) {
   };
 
   const handleCreateTask = async () => {
-    try {
-      const referenceTask = tasks.find(task => task.boardName === formData.boardName);
-      
-      if (!referenceTask) {
-        throw new Error('Не удалось найти boardId для выбранного проекта');
-      }
-  
-      const payload = {
-        title: formData.title,
-        description: formData.description,
-        priority: formData.priority,
-        assigneeId: formData.assigneeId,
-        boardId: referenceTask.boardId,
-        status: formData.status || 'Backlog',
-      };
-  
-      const response = await axios.post(
-        'http://localhost:8080/api/v1/tasks/create',
-        payload,
-        {
-          headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-  
-      const newTask = {
-        ...response.data,
-        id: response.data.id || Date.now(),
-        title: formData.title,
-        description: formData.description,
-        priority: formData.priority,
-        status: formData.status || 'Backlog',
-        assignee: users.find(user => user.id === formData.assigneeId) || null,
-        boardName: formData.boardName,
-        boardId: referenceTask.boardId,
-        createdAt: new Date().toISOString(), 
-      };
-  
-      setTasks(prevTasks => [...prevTasks, newTask]);
-      setOpenModal(false);
-      onModalClose?.();
-    } catch (error) {
-      console.error('Ошибка при создании задачи:', error);
-      setError(error.message);
+  try {
+    const referenceTask = board?.find(task => task.boardName === formData.boardName);
+    
+    if (!referenceTask) {
+      throw new Error('Не удалось найти boardId для выбранного проекта');
     }
+
+    const payload = {
+      title: formData.title,
+      description: formData.description,
+      priority: formData.priority,
+      assigneeId: formData.assigneeId,
+      boardId: referenceTask.boardId,
+      status: formData.status || 'Backlog',
+    };
+
+    const response = await axios.post(
+      'http://localhost:8080/api/v1/tasks/create',
+      payload,
+      {
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    const newTask = {
+      ...response.data,
+      id: response.data.id || Date.now(),
+      title: formData.title,
+      description: formData.description,
+      priority: formData.priority,
+      status: formData.status || 'Backlog',
+      assignee: users.find(user => user.id === formData.assigneeId) || null,
+      boardName: formData.boardName,
+      boardId: referenceTask.boardId,
+      createdAt: new Date().toISOString(), 
+    };
+
+    setBoard(prev => [...(prev || []), newTask]);
+    handleCloseModal();
+  } catch (error) {
+    console.error('Ошибка при создании задачи:', error);
+    setError(error.message);
+  }
   };
 
   const handleUpdateTask = async () => {
@@ -180,13 +196,15 @@ function BoardPage({ modalOpen = false, onModalClose }) {
       );
 
       // Обновляем локальное состояние
-      setBoard(prev => prev.map(task => 
-        task.id === selectedTask.id ? { 
-          ...task, 
-          ...formData,
-          assignee: users.find(u => u.id === formData.assigneeId) 
-        } : task
-      ));
+      if (board) {
+        setBoard(prev => prev.map(task => 
+          task.id === selectedTask.id ? { 
+            ...task, 
+            ...formData,
+            assignee: users.find(u => u.id === formData.assigneeId) 
+          } : task
+        ));
+      }
 
       handleCloseModal();
     } catch (error) {
@@ -219,7 +237,7 @@ function BoardPage({ modalOpen = false, onModalClose }) {
         {/* Заголовки */}
         <Box sx={{ px: 3 }}>
           <Typography variant="h4" gutterBottom>
-            {boardNameFromUrl || (board.length > 0 ? board[0].boardName : "Название проекта")}
+            {boardNameFromUrl || (board?.length > 0 ? board[0].boardName : "Название проекта")}
           </Typography>
 
           <Typography variant="subtitle1" gutterBottom sx={{ mb: 3 }}>
