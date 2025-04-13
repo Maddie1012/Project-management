@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import axios from "axios";
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import TaskModal from "../components/TaskModal";
 import {
   Container,
@@ -37,6 +38,13 @@ function BoardPage({ modalOpen = false, onModalClose }) {
     assigneeId: '',
     boardName: '',
   });
+
+  // Определяем статусы для колонок
+  const statuses = [
+    { id: 'Backlog', title: 'To Do', color: '#f5f5f5' },
+    { id: 'InProgress', title: 'In Progress', color: '#fff8e1' },
+    { id: 'Done', title: 'Done', color: '#e8f5e9' }
+  ];
 
   useEffect(() => {
     if (taskIdFromUrl && board && !manuallyClosed) {
@@ -120,7 +128,6 @@ function BoardPage({ modalOpen = false, onModalClose }) {
   const handleCloseModal = () => {
     setOpenModal(false);
     setManuallyClosed(true);
-    // Очищаем taskId из URL
     const params = new URLSearchParams(location.search);
     params.delete('taskId');
     window.history.replaceState({}, '', `${location.pathname}?${params}`);
@@ -133,52 +140,51 @@ function BoardPage({ modalOpen = false, onModalClose }) {
   };
 
   const handleCreateTask = async () => {
-  try {
-    const referenceTask = board?.find(task => task.boardName === formData.boardName);
-    
-    if (!referenceTask) {
-      throw new Error('Не удалось найти boardId для выбранного проекта');
-    }
-
-    const payload = {
-      title: formData.title,
-      description: formData.description,
-      priority: formData.priority,
-      assigneeId: formData.assigneeId,
-      boardId: referenceTask.boardId,
-      status: formData.status || 'Backlog',
-    };
-
-    const response = await axios.post(
-      'http://localhost:8080/api/v1/tasks/create',
-      payload,
-      {
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
+    try {
+      const referenceTask = board?.find(task => task.boardName === formData.boardName);
+      
+      if (!referenceTask) {
+        throw new Error('Не удалось найти boardId для выбранного проекта');
       }
-    );
 
-    const newTask = {
-      ...response.data,
-      id: response.data.id || Date.now(),
-      title: formData.title,
-      description: formData.description,
-      priority: formData.priority,
-      status: formData.status || 'Backlog',
-      assignee: users.find(user => user.id === formData.assigneeId) || null,
-      boardName: formData.boardName,
-      boardId: referenceTask.boardId,
-      createdAt: new Date().toISOString(), 
-    };
+      const payload = {
+        title: formData.title,
+        description: formData.description,
+        priority: formData.priority,
+        assigneeId: formData.assigneeId,
+        boardId: referenceTask.boardId,
+        status: formData.status || 'Backlog',
+      };
 
-    setBoard(prev => [...(prev || []), newTask]);
-    handleCloseModal();
-  } catch (error) {
-    console.error('Ошибка при создании задачи:', error);
-    setError(error.message);
-  }
+      const response = await axios.post(
+        'http://localhost:8080/api/v1/tasks/create',
+        payload,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      const newTask = {
+        ...response.data,
+        id: response.data.id || Date.now(),
+        title: formData.title,
+        description: formData.description,
+        priority: formData.priority,
+        status: formData.status || 'Backlog',
+        assignee: users.find(user => user.id === formData.assigneeId) || null,
+        boardName: formData.boardName,
+        boardId: referenceTask.boardId,
+        createdAt: new Date().toISOString(), 
+      };
+
+      setBoard(prev => [...(prev || []), newTask]);
+      handleCloseModal();
+    } catch (error) {
+      console.error('Ошибка при создании задачи:', error);
+      setError(error.message);
+    }
   };
 
   const handleUpdateTask = async () => {
@@ -195,7 +201,6 @@ function BoardPage({ modalOpen = false, onModalClose }) {
         { headers: { 'Content-Type': 'application/json' } }
       );
 
-      // Обновляем локальное состояние
       if (board) {
         setBoard(prev => prev.map(task => 
           task.id === selectedTask.id ? { 
@@ -209,6 +214,36 @@ function BoardPage({ modalOpen = false, onModalClose }) {
       handleCloseModal();
     } catch (error) {
       console.error("Ошибка при обновлении задачи:", error);
+    }
+  };
+
+  const onDragEnd = async (result) => {
+    const { destination, source, draggableId } = result;
+
+    if (!destination || 
+        (destination.droppableId === source.droppableId && 
+         destination.index === source.index)) {
+      return;
+    }
+
+    const taskId = parseInt(draggableId);
+    const newStatus = destination.droppableId;
+    
+    try {
+      const updatedBoard = board.map(task => 
+        task.id === taskId ? { ...task, status: newStatus } : task
+      );
+      setBoard(updatedBoard);
+
+      await axios.put(
+        `http://localhost:8080/api/v1/tasks/updateStatus/${taskId}`,
+        { status: newStatus },
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+
+    } catch (error) {
+      console.error("Ошибка при обновлении статуса:", error);
+      setBoard(board);
     }
   };
 
@@ -232,132 +267,96 @@ function BoardPage({ modalOpen = false, onModalClose }) {
   }
 
   return (
-    <Container maxWidth={false} sx={{ py: 4, px: 3 }}>
-      <Box sx={{ maxWidth: 1200, mx: "auto" }}>
-        {/* Заголовки */}
-        <Box sx={{ px: 3 }}>
-          <Typography variant="h4" gutterBottom>
-            {boardNameFromUrl || (board?.length > 0 ? board[0].boardName : "Название проекта")}
-          </Typography>
+    <DragDropContext onDragEnd={onDragEnd}>
+      <Container maxWidth={false} sx={{ py: 4, px: 3 }}>
+        <Box sx={{ maxWidth: 1200, mx: "auto" }}>
+          <Box sx={{ px: 3 }}>
+            <Typography variant="h4" gutterBottom>
+              {boardNameFromUrl || (board?.length > 0 ? board[0].boardName : "Название проекта")}
+            </Typography>
+            <Typography variant="subtitle1" gutterBottom sx={{ mb: 3 }}>
+              Все задачи
+            </Typography>
+          </Box>
 
-          <Typography variant="subtitle1" gutterBottom sx={{ mb: 3 }}>
-            Все задачи
-          </Typography>
+          <Box
+            sx={{
+              display: "flex",
+              gap: 3,
+              overflowX: "auto",
+              pb: 2,
+              px: 3,
+              width: "100%",
+            }}
+          >
+            {statuses.map((status) => (
+              <Droppable key={status.id} droppableId={status.id}>
+                {(provided) => (
+                  <Paper 
+                    elevation={2} 
+                    sx={{ width: 350, flexShrink: 0 }}
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                  >
+                    <Box p={2} bgcolor={status.color} borderRadius="4px 4px 0 0">
+                      <Typography variant="h6" fontWeight="bold">
+                        {status.title}
+                      </Typography>
+                    </Box>
+                    <Box p={2} sx={{ minHeight: 200 }}>
+                      {board
+                        ?.filter(task => task.status === status.id)
+                        .map((task, index) => (
+                          <Draggable 
+                            key={task.id} 
+                            draggableId={String(task.id)} 
+                            index={index}
+                          >
+                            {(provided, snapshot) => (
+                              <Card
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                {...provided.dragHandleProps}
+                                sx={{ 
+                                  mb: 2, 
+                                  cursor: 'pointer',
+                                  '&:hover': { boxShadow: 2 },
+                                  backgroundColor: snapshot.isDragging ? '#f0f0f0' : 'inherit',
+                                  transform: snapshot.isDragging ? 'rotate(2deg)' : 'none',
+                                }}
+                                onClick={() => handleCardClick(task)}
+                              >
+                                <CardContent>
+                                  <Typography>{task.title}</Typography>
+                                </CardContent>
+                              </Card>
+                            )}
+                          </Draggable>
+                        ))}
+                      {provided.placeholder}
+                    </Box>
+                  </Paper>
+                )}
+              </Droppable>
+            ))}
+          </Box>
         </Box>
 
-        {/* Колонки */}
-        <Box
-          sx={{
-            display: "flex",
-            gap: 3,
-            overflowX: "auto",
-            pb: 2,
-            px: 3,
-            width: "100%",
-          }}
-        >
-          {/* To Do Column */}
-          <Paper elevation={2} sx={{ width: 350, flexShrink: 0 }}>
-            <Box p={2} bgcolor="#f5f5f5" borderRadius="4px 4px 0 0">
-              <Typography variant="h6" fontWeight="bold">
-                To Do
-              </Typography>
-            </Box>
-            <Box p={2} sx={{ minHeight: 200 }}>
-              {board?.map(
-                (task) =>
-                  task.status === "Backlog" && (
-                    <Card
-                      key={task.id}
-                      sx={{ 
-                        mb: 2, 
-                        cursor: 'pointer',
-                        '&:hover': { boxShadow: 2 },
-                      }}
-                      onClick={() => handleCardClick(task)}
-                    >
-                      <CardContent>
-                        <Typography>{task.title}</Typography>
-                      </CardContent>
-                    </Card>
-                  )
-              )}
-            </Box>
-          </Paper>
-
-          {/* In Progress Column */}
-          <Paper elevation={2} sx={{ width: 350, flexShrink: 0 }}>
-            <Box p={2} bgcolor="#fff8e1" borderRadius="4px 4px 0 0">
-              <Typography variant="h6" fontWeight="bold">
-                In Progress
-              </Typography>
-            </Box>
-            <Box p={2} sx={{ minHeight: 200 }}>
-              {board?.map(
-                (task) =>
-                  task.status === 'InProgress' && (
-                    <Card
-                      key={task.id}
-                      sx={{ 
-                        mb: 2, 
-                        cursor: 'pointer',
-                        "&:hover": { boxShadow: 2 }
-                      }}
-                      onClick={() => handleCardClick(task)}
-                    >
-                      <CardContent>
-                        <Typography>{task.title}</Typography>
-                      </CardContent>
-                    </Card>
-                  )
-              )}
-            </Box>
-          </Paper>
-
-          {/* Done Column */}
-          <Paper elevation={2} sx={{ width: 350, flexShrink: 0 }}>
-            <Box p={2} bgcolor="#e8f5e9" borderRadius="4px 4px 0 0">
-              <Typography variant="h6" fontWeight="bold">
-                Done
-              </Typography>
-            </Box>
-            <Box p={2} sx={{ minHeight: 200 }}>
-              {board?.map(
-                (task) =>
-                  task.status === "Done" && (
-                    <Card
-                      key={task.id}
-                      sx={{ 
-                        mb: 2, 
-                        cursor: "pointer",
-                        "&:hover": { boxShadow: 2 }
-                      }}
-                      onClick={() => handleCardClick(task)}
-                    >
-                      <CardContent>
-                        <Typography>{task.title}</Typography>
-                      </CardContent>
-                    </Card>
-                  )
-              )}
-            </Box>
-          </Paper>
-        </Box>
-      </Box>
-      <TaskModal
-        open={openModal}
-        onClose={handleCloseModal}
-        task={selectedTask}
-        formData={formData}
-        users={users}
-        onInputChange={handleInputChange}
-        onUpdateTask={handleUpdateTask}
-        onCreateTask={handleCreateTask}
-        isIssuesPage={isIssuesPage}
-        mode={modalMode}
-        disableProjectField={!isIssuesPage}
-      />
-    </Container>
+        <TaskModal
+          open={openModal}
+          onClose={handleCloseModal}
+          task={selectedTask}
+          formData={formData}
+          users={users}
+          onInputChange={handleInputChange}
+          onUpdateTask={handleUpdateTask}
+          onCreateTask={handleCreateTask}
+          isIssuesPage={isIssuesPage}
+          mode={modalMode}
+          disableProjectField={!isIssuesPage}
+        />
+      </Container>
+    </DragDropContext>
   );
 }
 
