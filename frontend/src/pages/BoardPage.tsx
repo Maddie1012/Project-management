@@ -143,8 +143,9 @@ function BoardPage() {
         {/* Заголовки */}
         <Box sx={{ px: 3 }}>
           <Typography variant="h4" gutterBottom>
-            Название проекта
+            {board.length > 0 ? board[0].title : "Название проекта"}
           </Typography>
+
           <Typography variant="subtitle1" gutterBottom sx={{ mb: 3 }}>
             Все задачи
           </Typography>
