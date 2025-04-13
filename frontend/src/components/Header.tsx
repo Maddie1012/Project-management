@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { AppBar, Toolbar, Button, Box } from '@mui/material';
 
-export default function Header(onCreateClick) {
+export default function Header({onCreateClick}) {
   const navigate = useNavigate();
 
   return (
@@ -40,11 +40,10 @@ export default function Header(onCreateClick) {
             Проекты
           </Box>
         </Box>
-
         <Button
           color="secondary"
           variant="contained"
-          onClick={() => navigate('/issues/new')}
+          onClick={onCreateClick} // Изменили здесь
           sx={{
             backgroundColor: '#00aaff',
             '&:hover': { backgroundColor: '#0099f7' },

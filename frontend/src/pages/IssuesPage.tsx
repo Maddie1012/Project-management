@@ -22,7 +22,7 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import TaskModal from '../components/TaskModal';
 
-function IssuesPage() {
+function IssuesPage({ modalOpen = false, onModalClose }) {
   const location = useLocation();
   const isIssuesPage = location.pathname === '/issues';
   const [tasks, setTasks] = useState([]);
@@ -45,6 +45,18 @@ function IssuesPage() {
     board: '',
   });
   const [modalMode, setModalMode] = useState('edit');
+
+
+  useEffect(() => {
+    if (modalOpen) {
+      handleCreateClick();
+    }
+  }, [modalOpen]);
+
+  const handleCloseModal = () => {
+    setOpenModal(false);
+    onModalClose?.();
+  };
 
   // Загрузка задач
   useEffect(() => {
@@ -102,9 +114,6 @@ function IssuesPage() {
     setOpenModal(true);
   };
 
-  const handleCloseModal = () => {
-    setOpenModal(false);
-  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
