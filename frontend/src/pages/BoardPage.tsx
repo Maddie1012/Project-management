@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import axios from "axios";
 import TaskModal from "../components/TaskModal";
 import {
@@ -15,6 +16,9 @@ import {
 
 function BoardPage() {
   const { id } = useParams();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const boardNameFromUrl = queryParams.get('boardName');
   const [board, setBoard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -143,7 +147,7 @@ function BoardPage() {
         {/* Заголовки */}
         <Box sx={{ px: 3 }}>
           <Typography variant="h4" gutterBottom>
-            {board.length > 0 ? board[0].title : "Название проекта"}
+            {boardNameFromUrl || (board.length > 0 ? board[0].boardName : "Название проекта")}
           </Typography>
 
           <Typography variant="subtitle1" gutterBottom sx={{ mb: 3 }}>

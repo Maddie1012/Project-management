@@ -96,7 +96,7 @@ function BoardsPage() {
                 <CardContent>
                   <Button
                     component={Link}
-                    to={`/boards/${board.boardId}`}
+                    to={`/boards/${board.boardId}?boardName=${encodeURIComponent(board.boardName)}`}
                     sx={{
                       textDecoration: 'none', // Убираем подчеркивание
                       color: 'inherit', // Наследуем цвет текста
