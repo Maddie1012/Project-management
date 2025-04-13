@@ -9,6 +9,7 @@ import {
   MenuItem,
   Typography
 } from '@mui/material';
+import { useState } from 'react';
 
 const TaskModal = ({
   open,
@@ -22,8 +23,38 @@ const TaskModal = ({
   isIssuesPage = false,
   mode = 'edit', // 'edit' или 'create'
 }) => {
-  // Проверяем, заполнены ли обязательные поля
-  const isFormValid = formData.title && formData.description;
+  // Состояние для отслеживания "прикосновений" к полям
+  const [touchedFields, setTouchedFields] = useState({
+    title: false,
+    description: false,
+    boardName: false,
+    priority: false,
+    status: false,
+    assigneeId: false
+  });
+
+  // Обработчик изменения полей, который также отмечает поле как "тронутое"
+  const handleInputChange = (e) => {
+    const { name } = e.target;
+    // Если поле еще не было отмечено как "тронутое", отмечаем его
+    if (!touchedFields[name]) {
+      setTouchedFields(prev => ({
+        ...prev,
+        [name]: true
+      }));
+    }
+    // Вызываем оригинальный обработчик
+    onInputChange(e);
+  };
+
+  // Проверяем, заполнены ли все обязательные поля
+  const isFormValid = 
+    formData.title && 
+    formData.description &&
+    formData.boardName &&
+    formData.priority &&
+    formData.status &&
+    formData.assigneeId; 
 
   return (
     <Modal open={open} onClose={onClose} aria-labelledby="task-modal-title">
@@ -51,34 +82,38 @@ const TaskModal = ({
             name="title"
             label="Название"
             value={formData.title}
-            onChange={onInputChange}
+            onChange={handleInputChange}
+            onBlur={() => setTouchedFields(prev => ({ ...prev, title: true }))}
             fullWidth
             required
-            error={!formData.title}
-            helperText={!formData.title ? "Это поле обязательно для заполнения" : ""}
+            error={!formData.title && touchedFields.title}
+            helperText={!formData.title && touchedFields.title ? "Это поле обязательно для заполнения" : ""}
           />
 
           <TextField
             name="description"
             label="Описание"
             value={formData.description}
-            onChange={onInputChange}
+            onChange={handleInputChange}
+            onBlur={() => setTouchedFields(prev => ({ ...prev, description: true }))}
             multiline
             rows={4}
             fullWidth
             required
-            error={!formData.description}
-            helperText={!formData.description ? "Это поле обязательно для заполнения" : ""}
+            error={!formData.description && touchedFields.description}
+            helperText={!formData.description && touchedFields.description ? "Это поле обязательно для заполнения" : ""}
           />
 
-          <FormControl fullWidth>
+          <FormControl fullWidth required error={!formData.boardName && touchedFields.boardName}>
             <InputLabel>Проект</InputLabel>
             <Select
               name="boardName"
               value={formData.boardName}
               label="Проект"
-              onChange={onInputChange}
+              onChange={handleInputChange}
+              onBlur={() => setTouchedFields(prev => ({ ...prev, boardName: true }))}
               required
+              error={!formData.boardName && touchedFields.boardName}
             >
               <MenuItem value="Редизайн карточки товара">
                 Редизайн карточки товара
@@ -97,45 +132,67 @@ const TaskModal = ({
                 Переход на Kubernetes
               </MenuItem>
             </Select>
+            {!formData.boardName && touchedFields.boardName && (
+              <Typography variant="caption" color="error">
+                Это поле обязательно для заполнения
+              </Typography>
+            )}
           </FormControl>
 
-          <FormControl fullWidth>
+          <FormControl fullWidth required error={!formData.priority && touchedFields.priority}>
             <InputLabel>Приоритет</InputLabel>
             <Select
               name="priority"
               value={formData.priority}
               label="Приоритет"
-              onChange={onInputChange}
+              onChange={handleInputChange}
+              onBlur={() => setTouchedFields(prev => ({ ...prev, priority: true }))}
               required
+              error={!formData.priority && touchedFields.priority}
             >
               <MenuItem value="Low">Низкий</MenuItem>
               <MenuItem value="Medium">Средний</MenuItem>
               <MenuItem value="High">Высокий</MenuItem>
             </Select>
+            {!formData.priority && touchedFields.priority && (
+              <Typography variant="caption" color="error">
+                Это поле обязательно для заполнения
+              </Typography>
+            )}
           </FormControl>
 
-          <FormControl fullWidth>
+          <FormControl fullWidth required error={!formData.status && touchedFields.status}>
             <InputLabel>Статус</InputLabel>
             <Select
               name="status"
               value={formData.status}
               label="Статус"
-              onChange={onInputChange}
+              onChange={handleInputChange}
+              onBlur={() => setTouchedFields(prev => ({ ...prev, status: true }))}
               required
+              error={!formData.status && touchedFields.status}
             >
               <MenuItem value="Backlog">Сделать</MenuItem>
               <MenuItem value="InProgress">В процессе</MenuItem>
               <MenuItem value="Done">Выполнено</MenuItem>
             </Select>
+            {!formData.status && touchedFields.status && (
+              <Typography variant="caption" color="error">
+                Это поле обязательно для заполнения
+              </Typography>
+            )}
           </FormControl>
 
-          <FormControl fullWidth>
+          <FormControl fullWidth required error={!formData.assigneeId && touchedFields.assigneeId}>
             <InputLabel>Исполнитель</InputLabel>
             <Select
               name="assigneeId"
               value={formData.assigneeId}
               label="Исполнитель"
-              onChange={onInputChange}
+              onChange={handleInputChange}
+              onBlur={() => setTouchedFields(prev => ({ ...prev, assigneeId: true }))}
+              required
+              error={!formData.assigneeId && touchedFields.assigneeId}
             >
               {users.map(user => (
                 <MenuItem key={user.id} value={user.id}>
@@ -143,6 +200,11 @@ const TaskModal = ({
                 </MenuItem>
               ))}
             </Select>
+            {!formData.assigneeId && touchedFields.assigneeId && (
+              <Typography variant="caption" color="error">
+                Это поле обязательно для заполнения
+              </Typography>
+            )}
           </FormControl>
 
           <Box

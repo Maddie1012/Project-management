@@ -94,7 +94,7 @@ function IssuesPage() {
       title: '',
       description: '',
       priority: '',
-      status: 'Backlog',
+      status: '',
       assigneeId: '',
       boardName: '',
     });
