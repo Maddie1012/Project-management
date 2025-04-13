@@ -17,7 +17,9 @@ import {
   InputLabel,
   MenuItem,
   InputAdornment,
+  Fab,
 } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import TaskModal from '../components/TaskModal';
 
 function IssuesPage() {
@@ -42,6 +44,7 @@ function IssuesPage() {
     status: '',
     board: '',
   });
+  const [modalMode, setModalMode] = useState('edit'); // 'edit' или 'create'
 
   // Загрузка задач
   useEffect(() => {
@@ -81,6 +84,21 @@ function IssuesPage() {
       assigneeId: task.assignee?.id || '',
       boardName: task.boardName || '',
     });
+    setModalMode('edit');
+    setOpenModal(true);
+  };
+
+  const handleCreateClick = () => {
+    setSelectedTask(null);
+    setFormData({
+      title: '',
+      description: '',
+      priority: '',
+      status: 'Backlog',
+      assigneeId: '',
+      boardName: '',
+    });
+    setModalMode('create');
     setOpenModal(true);
   };
 
@@ -162,6 +180,43 @@ function IssuesPage() {
     }
   };
 
+  // Создание новой задачи
+  const handleCreateTask = async () => {
+    try {
+      const payload = {
+        title: formData.title,
+        description: formData.description,
+        priority: formData.priority,
+        status: formData.status,
+        assigneeId: formData.assigneeId,
+        boardName: formData.boardName,
+      };
+
+      const response = await axios.post(
+        'http://localhost:8080/api/v1/tasks/create',
+        payload,
+        {
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      const newTask = {
+        ...response.data,
+        assignee: users.find(user => user.id === formData.assigneeId) || null,
+      };
+
+      setTasks(prevTasks => [...prevTasks, newTask]);
+      setOpenModal(false);
+    } catch (error) {
+      console.error('Ошибка при создании задачи:', error);
+      setError(error.message);
+      alert('Произошла ошибка при создании задачи');
+    }
+  };
+
   if (loading) {
     return (
       <Container sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
@@ -179,7 +234,7 @@ function IssuesPage() {
   }
 
   return (
-    <Container sx={{ py: 4, maxWidth: 'md' }}>
+    <Container sx={{ py: 4, maxWidth: 'md', position: 'relative' }}>
       <Box sx={{ mb: 4 }}>
         <TextField
           label="Поиск по задачам и исполнителям"
@@ -293,6 +348,19 @@ function IssuesPage() {
         </Typography>
       )}
 
+      <Fab
+        color="primary"
+        aria-label="add"
+        sx={{
+          position: 'fixed',
+          bottom: 32,
+          right: 32,
+        }}
+        onClick={handleCreateClick}
+      >
+        <AddIcon />
+      </Fab>
+
       <TaskModal
         open={openModal}
         onClose={handleCloseModal}
@@ -301,7 +369,9 @@ function IssuesPage() {
         users={users}
         onInputChange={handleInputChange}
         onUpdateTask={handleUpdateTask}
+        onCreateTask={handleCreateTask}
         isIssuesPage={isIssuesPage}
+        mode={modalMode}
       />
     </Container>
   );
