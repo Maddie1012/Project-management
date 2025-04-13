@@ -21,7 +21,8 @@ const TaskModal = ({
   onUpdateTask,
   onCreateTask,
   isIssuesPage = false,
-  mode = 'edit', 
+  mode = 'edit',
+  disableProjectField = false,
 }) => {
   const [touchedFields, setTouchedFields] = useState({
     title: false,
@@ -99,7 +100,12 @@ const TaskModal = ({
             helperText={!formData.description && touchedFields.description ? "Это поле обязательно для заполнения" : ""}
           />
 
-          <FormControl fullWidth required error={!formData.boardName && touchedFields.boardName}>
+          <FormControl 
+            fullWidth 
+            required 
+            error={!formData.boardName && touchedFields.boardName}
+            disabled={disableProjectField} // Блокируем, если disableProjectField=true
+          >
             <InputLabel>Проект</InputLabel>
             <Select
               name="boardName"
@@ -109,6 +115,7 @@ const TaskModal = ({
               onBlur={() => setTouchedFields(prev => ({ ...prev, boardName: true }))}
               required
               error={!formData.boardName && touchedFields.boardName}
+              disabled={disableProjectField} // Блокируем и Select
             >
               <MenuItem value="Редизайн карточки товара">
                 Редизайн карточки товара

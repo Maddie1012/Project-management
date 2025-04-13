@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 import { useParams } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 import axios from "axios";
@@ -14,14 +14,17 @@ import {
   Box,
 } from "@mui/material";
 
-function BoardPage() {
+function BoardPage({ modalOpen = false, onModalClose }) {
+  const [users, setUsers] = useState([]);
   const { id } = useParams();
   const location = useLocation();
+  const isIssuesPage = location.pathname === '/issues';
   const queryParams = new URLSearchParams(location.search);
   const boardNameFromUrl = queryParams.get('boardName');
   const [board, setBoard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [modalMode, setModalMode] = useState('edit');
   const [selectedTask, setSelectedTask] = useState(null);
   const [openModal, setOpenModal] = useState(false);
   const [formData, setFormData] = useState({
@@ -32,7 +35,6 @@ function BoardPage() {
     assigneeId: '',
     boardName: '',
   });
-  const [users, setUsers] = useState([]); // Состояние для пользователей
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -70,6 +72,26 @@ function BoardPage() {
       });
   }, [id]);
 
+  useEffect(() => {
+    if (modalOpen) {
+      handleCreateClick();
+    }
+  }, [modalOpen]);
+
+  const handleCreateClick = () => {
+    setSelectedTask(null);
+    setFormData({
+      title: '',
+      description: '',
+      priority: '',
+      status: 'Backlog',
+      assigneeId: '',
+      boardName: '',
+    });
+    setModalMode('create');
+    setOpenModal(true);
+  };
+
   const handleCardClick = (task) => {
     setSelectedTask(task);
     setFormData({
@@ -78,8 +100,9 @@ function BoardPage() {
       priority: task.priority || '',
       status: task.status || '',
       assigneeId: task.assignee?.id || '',
-      boardName: task.boardName || '',
+      boardName: task.boardName || boardNameFromUrl || '',
     });
+    setModalMode('edit');
     setOpenModal(true);
   };
 
@@ -90,6 +113,56 @@ function BoardPage() {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleCreateTask = async () => {
+    try {
+      const referenceTask = tasks.find(task => task.boardName === formData.boardName);
+      
+      if (!referenceTask) {
+        throw new Error('Не удалось найти boardId для выбранного проекта');
+      }
+  
+      const payload = {
+        title: formData.title,
+        description: formData.description,
+        priority: formData.priority,
+        assigneeId: formData.assigneeId,
+        boardId: referenceTask.boardId,
+        status: formData.status || 'Backlog',
+      };
+  
+      const response = await axios.post(
+        'http://localhost:8080/api/v1/tasks/create',
+        payload,
+        {
+          headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+  
+      const newTask = {
+        ...response.data,
+        id: response.data.id || Date.now(),
+        title: formData.title,
+        description: formData.description,
+        priority: formData.priority,
+        status: formData.status || 'Backlog',
+        assignee: users.find(user => user.id === formData.assigneeId) || null,
+        boardName: formData.boardName,
+        boardId: referenceTask.boardId,
+        createdAt: new Date().toISOString(), 
+      };
+  
+      setTasks(prevTasks => [...prevTasks, newTask]);
+      setOpenModal(false);
+      onModalClose?.();
+    } catch (error) {
+      console.error('Ошибка при создании задачи:', error);
+      setError(error.message);
+    }
   };
 
   const handleUpdateTask = async () => {
@@ -118,7 +191,6 @@ function BoardPage() {
       handleCloseModal();
     } catch (error) {
       console.error("Ошибка при обновлении задачи:", error);
-      alert("Не удалось обновить задачу");
     }
   };
 
@@ -262,7 +334,10 @@ function BoardPage() {
         users={users}
         onInputChange={handleInputChange}
         onUpdateTask={handleUpdateTask}
-        mode="edit"
+        onCreateTask={handleCreateTask}
+        isIssuesPage={isIssuesPage}
+        mode={modalMode}
+        disableProjectField={!isIssuesPage}
       />
     </Container>
   );
