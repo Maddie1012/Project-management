@@ -21,9 +21,8 @@ const TaskModal = ({
   onUpdateTask,
   onCreateTask,
   isIssuesPage = false,
-  mode = 'edit', // 'edit' или 'create'
+  mode = 'edit', 
 }) => {
-  // Состояние для отслеживания "прикосновений" к полям
   const [touchedFields, setTouchedFields] = useState({
     title: false,
     description: false,
@@ -33,21 +32,17 @@ const TaskModal = ({
     assigneeId: false
   });
 
-  // Обработчик изменения полей, который также отмечает поле как "тронутое"
   const handleInputChange = (e) => {
     const { name } = e.target;
-    // Если поле еще не было отмечено как "тронутое", отмечаем его
     if (!touchedFields[name]) {
       setTouchedFields(prev => ({
         ...prev,
         [name]: true
       }));
     }
-    // Вызываем оригинальный обработчик
     onInputChange(e);
   };
 
-  // Проверяем, заполнены ли все обязательные поля
   const isFormValid = 
     formData.title && 
     formData.description &&

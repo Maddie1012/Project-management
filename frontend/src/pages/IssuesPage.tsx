@@ -44,7 +44,7 @@ function IssuesPage() {
     status: '',
     board: '',
   });
-  const [modalMode, setModalMode] = useState('edit'); // 'edit' или 'create'
+  const [modalMode, setModalMode] = useState('edit');
 
   // Загрузка задач
   useEffect(() => {
@@ -180,17 +180,23 @@ function IssuesPage() {
     }
   };
 
-  // Создание новой задачи
+
   const handleCreateTask = async () => {
     try {
+      const referenceTask = tasks.find(task => task.boardName === formData.boardName);
+      
+      if (!referenceTask) {
+        throw new Error('Не удалось найти boardId для выбранного проекта');
+      }
+
       const payload = {
         title: formData.title,
         description: formData.description,
         priority: formData.priority,
         assigneeId: formData.assigneeId,
-        boardName: formData.boardName,
+        boardId: referenceTask.boardId, /
       };
-
+      console.log(payload)
       const response = await axios.post(
         'http://localhost:8080/api/v1/tasks/create',
         payload,
@@ -205,6 +211,8 @@ function IssuesPage() {
       const newTask = {
         ...response.data,
         assignee: users.find(user => user.id === formData.assigneeId) || null,
+        boardName: formData.boardName, 
+        boardId: referenceTask.boardId, 
       };
 
       setTasks(prevTasks => [...prevTasks, newTask]);
@@ -212,7 +220,7 @@ function IssuesPage() {
     } catch (error) {
       console.error('Ошибка при создании задачи:', error);
       setError(error.message);
-      alert('Произошла ошибка при создании задачи');
+      alert(`Произошла ошибка при создании задачи: ${error.message}`);
     }
   };
 
