@@ -13,7 +13,7 @@ function App() {
 
         <Route path="/issues" element={<IssuesPage />}></Route>
         <Route path="/boards" element={<BoardsPage />}></Route>
-        <Route path="/board/:id" element={<BoardPage />}></Route>
+        <Route path="/boards/:id" element={<BoardPage />}></Route>
       </Routes>
     </BrowserRouter>
   );

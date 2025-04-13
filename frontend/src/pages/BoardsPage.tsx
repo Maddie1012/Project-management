@@ -10,13 +10,14 @@ import {
   Container,
   Grid,
   Box,
+  Button,
 } from '@mui/material';
 
 function BoardsPage() {
   const [tasks, setTasks] = useState([]);
+  const [uniqueBoards, setUniqueBoards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedTask, setSelectedTask] = useState(null);
 
   useEffect(() => {
     axios
@@ -27,6 +28,19 @@ function BoardsPage() {
       })
       .then(response => {
         setTasks(response.data.data);
+        
+        // Получаем уникальные доски
+        const boardsMap = new Map();
+        response.data.data.forEach(task => {
+          if (task.boardName && task.boardId) {
+            boardsMap.set(task.boardId, {
+              boardName: task.boardName,
+              boardId: task.boardId
+            });
+          }
+        });
+        
+        setUniqueBoards(Array.from(boardsMap.values()));
         setLoading(false);
       })
       .catch(error => {
@@ -39,10 +53,6 @@ function BoardsPage() {
         setLoading(false);
       });
   }, []);
-
-  const handleCardClick = (task) => {
-    setSelectedTask(task);
-  };
 
   if (loading) {
     return (
@@ -65,33 +75,40 @@ function BoardsPage() {
 
   return (
     <Container sx={{ py: 4, maxWidth: 'md' }}>
-      {tasks.length > 0 ? (
+      {uniqueBoards.length > 0 ? (
         <Grid container spacing={2} flexDirection={'column'}>
-          {tasks.map(task => (
-            <Grid item xs={12} key={task.id}>
+          {uniqueBoards.map(board => (
+            <Grid item xs={12} key={board.boardId}>
               <Card
                 sx={{
-                  cursor: 'pointer',
                   height: '100%',
                   display: 'flex',
                   flexDirection: 'row',
-                  '&:hover': {
-                    boxShadow: 4,
-                    transform: 'translateY(-2px)',
-                    transition: 'all 0.3s ease',
-                  },
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
                 }}
-                onClick={() => handleCardClick(task)}
               >
                 <CardContent sx={{ flexGrow: 1 }}>
                   <Typography gutterBottom variant="h5" component="h2">
-                    {task.boardName}
+                    {board.boardName}
                   </Typography>
                 </CardContent>
                 <CardContent>
-                  <Box component={Link} to={'boards/:id'}>
+                  <Button
+                    component={Link}
+                    to={`/boards/${board.boardId}`}
+                    sx={{
+                      textDecoration: 'none', // Убираем подчеркивание
+                      color: 'inherit', // Наследуем цвет текста
+                      textTransform: 'none', // Убираем автоматическое преобразование в верхний регистр
+                      '&:hover': {
+                        textDecoration: 'none', // Убираем подчеркивание при наведении
+                        backgroundColor: 'rgba(0, 0, 0, 0.04)', // Легкий эффект при наведении
+                      },
+                    }}
+                  >
                     Перейти к доске
-                  </Box>
+                  </Button>
                 </CardContent>
               </Card>
             </Grid>
@@ -99,7 +116,7 @@ function BoardsPage() {
         </Grid>
       ) : (
         <Typography variant="body1" color="text.secondary">
-          Нет задач для отображения
+          Нет досок для отображения
         </Typography>
       )}
     </Container>

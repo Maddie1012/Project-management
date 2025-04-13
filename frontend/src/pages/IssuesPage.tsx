@@ -11,8 +11,6 @@ import {
   Alert,
   Container,
   Grid,
-  Modal,
-  Button,
   TextField,
   Select,
   FormControl,
@@ -20,6 +18,7 @@ import {
   MenuItem,
   InputAdornment,
 } from '@mui/material';
+import TaskModal from '../components/TaskModal';
 
 function IssuesPage() {
   const location = useLocation();
@@ -33,24 +32,24 @@ function IssuesPage() {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    project: '',
     priority: '',
     status: '',
     assigneeId: '',
     boardName: '',
   });
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
-  const [filterBoard, setFilterBoard] = useState('');
+  const [filters, setFilters] = useState({
+    status: '',
+    board: '',
+  });
 
-  // загрузка задач
+  // Загрузка задач
   useEffect(() => {
     const fetchTasks = async () => {
       try {
         const data = await getTasks();
         setTasks(data);
         setLoading(false);
-        // console.log(data);
       } catch (err) {
         setError(err.message);
         setLoading(false);
@@ -59,19 +58,17 @@ function IssuesPage() {
     fetchTasks();
   }, []);
 
-  // загрузка пользователей
+  // Загрузка пользователей
   useEffect(() => {
-    const fetchTaskss = async () => {
+    const fetchUsers = async () => {
       try {
         const data = await getUsers();
         setUsers(data);
-        setLoading(false);
       } catch (err) {
-        setError(err.message);
-        setLoading(false);
+        console.error('Ошибка загрузки пользователей:', err);
       }
     };
-    fetchTaskss();
+    fetchUsers();
   }, []);
 
   const handleCardClick = (task) => {
@@ -79,7 +76,6 @@ function IssuesPage() {
     setFormData({
       title: task.title,
       description: task.description || '',
-      project: task.id || '',
       priority: task.priority || '',
       status: task.status || '',
       assigneeId: task.assignee?.id || '',
@@ -101,24 +97,29 @@ function IssuesPage() {
     setSearchTerm(e.target.value);
   };
 
-  const handleFilterStatusChange = (e) => {
-    setFilterStatus(e.target.value);
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleFilterBoardChange = (e) => {
-    setFilterBoard(e.target.value);
-  };
-
-  // фильтрация задач
+  // Фильтрация задач
   const filteredTasks = tasks.filter(task => {
-    return (
-      task.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
-      (filterStatus ? task.status === filterStatus : true) &&
-      (filterBoard ? task.boardName === filterBoard : true)
-    );
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = 
+      searchTerm === '' ||
+      task.title.toLowerCase().includes(searchLower) ||
+      (task.assignee &&
+        task.assignee.fullName.toLowerCase().includes(searchLower));
+
+    const matchesStatus =
+      filters.status === '' || task.status === filters.status;
+    const matchesBoard =
+      filters.board === '' || task.boardName === filters.board;
+    
+    return matchesSearch && matchesStatus && matchesBoard;
   });
 
-  // обновление задачи
+  // Обновление задачи
   const handleUpdateTask = async () => {
     try {
       const payload = {
@@ -128,8 +129,7 @@ function IssuesPage() {
         status: formData.status,
         assigneeId: formData.assigneeId,
       };
-  
-      // Отправляем только нужные поля на сервер
+
       await axios.put(
         `http://localhost:8080/api/v1/tasks/update/${selectedTask.id}`,
         payload,
@@ -140,22 +140,20 @@ function IssuesPage() {
           },
         }
       );
-  
-      // Создаем полностью обновленный объект задачи для локального состояния
+
       const updatedTask = {
         ...selectedTask,
         ...payload,
-        boardName: formData.boardName, // Сохраняем локальное значение boardName
+        boardName: formData.boardName,
         assignee: users.find(user => user.id === formData.assigneeId) || null,
       };
-  
-      // Обновляем локальное состояние
+
       setTasks(prevTasks => 
         prevTasks.map(task => 
           task.id === updatedTask.id ? updatedTask : task
         )
       );
-  
+
       setOpenModal(false);
     } catch (error) {
       console.error('Ошибка при обновлении задачи:', error);
@@ -184,7 +182,7 @@ function IssuesPage() {
     <Container sx={{ py: 4, maxWidth: 'md' }}>
       <Box sx={{ mb: 4 }}>
         <TextField
-          label="Поиск по задачам"
+          label="Поиск по задачам и исполнителям"
           variant="outlined"
           fullWidth
           value={searchTerm}
@@ -199,14 +197,14 @@ function IssuesPage() {
 
       <Box sx={{ display: 'flex', gap: 2, mb: 4 }}>
         <FormControl fullWidth>
-          <InputLabel id="status-label">Статус</InputLabel>
+          <InputLabel>Статус</InputLabel>
           <Select
-            labelId="status-label"
-            value={filterStatus}
-            onChange={handleFilterStatusChange}
+            name="status"
+            value={filters.status}
+            onChange={handleFilterChange}
             label="Статус"
           >
-            <MenuItem value="">Все</MenuItem>
+            <MenuItem value="">Все статусы</MenuItem>
             <MenuItem value="Backlog">Backlog</MenuItem>
             <MenuItem value="InProgress">In Progress</MenuItem>
             <MenuItem value="Done">Done</MenuItem>
@@ -214,14 +212,14 @@ function IssuesPage() {
         </FormControl>
 
         <FormControl fullWidth>
-          <InputLabel id="board-label">Проект</InputLabel>
+          <InputLabel>Проект</InputLabel>
           <Select
-            labelId="board-label"
-            value={filterBoard}
-            onChange={handleFilterBoardChange}
+            name="board"
+            value={filters.board}
+            onChange={handleFilterChange}
             label="Проект"
           >
-            <MenuItem value="">Все</MenuItem>
+            <MenuItem value="">Все проекты</MenuItem>
             <MenuItem value="Редизайн карточки товара">
               Редизайн карточки товара
             </MenuItem>
@@ -270,7 +268,13 @@ function IssuesPage() {
                       color="text.secondary"
                       sx={{ mb: 1 }}
                     >
-                      Статус: {task.status}
+                      Статус: {
+                        {
+                          'Backlog': 'Сделать',
+                          'InProgress': 'В процессе',
+                          'Done': 'Выполнено'
+                        }[task.status] || task.status
+                      }
                     </Typography>
                   )}
                   {task.assignee && (
@@ -289,146 +293,16 @@ function IssuesPage() {
         </Typography>
       )}
 
-      <Modal
+      <TaskModal
         open={openModal}
         onClose={handleCloseModal}
-        aria-labelledby="task-modal-title"
-      >
-        <Box
-          sx={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: { xs: '90%', sm: '80%', md: '60%' },
-            bgcolor: 'background.paper',
-            boxShadow: 24,
-            p: 4,
-            borderRadius: 2,
-            maxHeight: '90vh',
-            overflowY: 'auto',
-          }}
-        >
-          {selectedTask && (
-            <Box display={'flex'} flexDirection={'column'} gap={'20px'}>
-              <TextField
-                name="title"
-                label="Название"
-                value={formData.title}
-                onChange={handleInputChange}
-                fullWidth
-              />
-
-              <TextField
-                name="description"
-                label="Описание"
-                value={formData.description}
-                onChange={handleInputChange}
-                multiline
-                rows={4}
-                fullWidth
-              />
-
-              <FormControl fullWidth>
-                <InputLabel id="project-label">Проект</InputLabel>
-                <Select
-                  labelId="project-label"
-                  name="boardName"
-                  value={formData.boardName}
-                  label="Проект"
-                  onChange={handleInputChange}
-                >
-                  <MenuItem value="Редизайн карточки товара">
-                    Редизайн карточки товара
-                  </MenuItem>
-                  <MenuItem value="Оптимизация производительности">
-                    Оптимизация производительности
-                  </MenuItem>
-                  <MenuItem value="Рефакторинг API">Рефакторинг API</MenuItem>
-                  <MenuItem value={'Миграция на новую БД'}>
-                    Миграция на новую БД
-                  </MenuItem>
-                  <MenuItem value={'Автоматизация тестирования'}>
-                    Автоматизация тестирования
-                  </MenuItem>
-                  <MenuItem value={'Переход на Kubernetes'}>
-                    Переход на Kubernetes
-                  </MenuItem>
-                </Select>
-              </FormControl>
-
-              <FormControl fullWidth>
-                <InputLabel id="priority-label">Приоритет</InputLabel>
-                <Select
-                  labelId="priority-label"
-                  name="priority"
-                  value={formData.priority}
-                  label="Приоритет"
-                  onChange={handleInputChange}
-                >
-                  <MenuItem value="Low">Низкий</MenuItem>
-                  <MenuItem value="Medium">Средний</MenuItem>
-                  <MenuItem value="High">Высокий</MenuItem>
-                </Select>
-              </FormControl>
-
-              <FormControl fullWidth>
-                <InputLabel id="status-label">Статус</InputLabel>
-                <Select
-                  labelId="status-label"
-                  name="status"
-                  value={formData.status}
-                  label="Статус"
-                  onChange={handleInputChange}
-                >
-                  <MenuItem value="Backlog">Backlog</MenuItem>
-                  <MenuItem value="InProgress">In Progress</MenuItem>
-                  <MenuItem value="Done">Done</MenuItem>
-                </Select>
-              </FormControl>
-
-              <FormControl fullWidth>
-                <InputLabel id="assignee-label">Исполнитель</InputLabel>
-                <Select
-                  labelId="assignee-label"
-                  name="assigneeId"
-                  value={formData.assigneeId}
-                  label="Исполнитель"
-                  onChange={handleInputChange}
-                >
-                  {users.map(user => (
-                    <MenuItem key={user.id} value={user.id}>
-                      {user.fullName}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={handleUpdateTask}
-                >
-                  Обновить
-                </Button>
-                {isIssuesPage && (
-                  <Button
-                    variant="outlined"
-                    color="secondary"
-                    onClick={() => {
-                      window.location.href = '/boards';
-                    }}
-                    sx={{ ml: 2 }}
-                  >
-                    Перейти на доску
-                  </Button>
-                )}
-              </Box>
-            </Box>
-          )}
-        </Box>
-      </Modal>
+        task={selectedTask}
+        formData={formData}
+        users={users}
+        onInputChange={handleInputChange}
+        onUpdateTask={handleUpdateTask}
+        isIssuesPage={isIssuesPage}
+      />
     </Container>
   );
 }
