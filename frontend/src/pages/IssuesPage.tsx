@@ -55,7 +55,7 @@ function IssuesPage({ modalOpen = false, onModalClose }) {
 
   const handleCloseModal = () => {
     setOpenModal(false);
-    onModalClose?.();
+    onModalClose?.(); // Вызываем колбэк закрытия
   };
 
   // Загрузка задач
@@ -204,7 +204,7 @@ function IssuesPage({ modalOpen = false, onModalClose }) {
         priority: formData.priority,
         assigneeId: formData.assigneeId,
         boardId: referenceTask.boardId,
-        status: formData.status || 'Backlog', // Добавляем статус из формы или по умолчанию
+        status: formData.status || 'Backlog',
       };
   
       const response = await axios.post(
@@ -218,10 +218,9 @@ function IssuesPage({ modalOpen = false, onModalClose }) {
         }
       );
   
-      // Создаем полный объект задачи со всеми необходимыми данными
       const newTask = {
         ...response.data,
-        id: response.data.id || Date.now(), // Используем ID из ответа или временный
+        id: response.data.id || Date.now(),
         title: formData.title,
         description: formData.description,
         priority: formData.priority,
@@ -229,11 +228,12 @@ function IssuesPage({ modalOpen = false, onModalClose }) {
         assignee: users.find(user => user.id === formData.assigneeId) || null,
         boardName: formData.boardName,
         boardId: referenceTask.boardId,
-        createdAt: new Date().toISOString(), // Добавляем дату создания
+        createdAt: new Date().toISOString(), 
       };
   
       setTasks(prevTasks => [...prevTasks, newTask]);
       setOpenModal(false);
+      onModalClose?.();
     } catch (error) {
       console.error('Ошибка при создании задачи:', error);
       setError(error.message);

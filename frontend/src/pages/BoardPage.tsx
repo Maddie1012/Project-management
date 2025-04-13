@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
+import TaskModal from "../components/TaskModal";
 import {
   Container,
   CircularProgress,
@@ -17,6 +18,31 @@ function BoardPage() {
   const [board, setBoard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [openModal, setOpenModal] = useState(false);
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    priority: '',
+    status: '',
+    assigneeId: '',
+    boardName: '',
+  });
+  const [users, setUsers] = useState([]); // Состояние для пользователей
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await axios.get('http://localhost:8080/api/v1/users', {
+          headers: { Accept: "application/json" }
+        });
+        setUsers(response.data.data);
+      } catch (err) {
+        console.error("Ошибка при загрузке пользователей:", err);
+      }
+    };
+    fetchUsers();
+  }, []);
 
   useEffect(() => {
     axios
@@ -39,6 +65,58 @@ function BoardPage() {
         setLoading(false);
       });
   }, [id]);
+
+  const handleCardClick = (task) => {
+    setSelectedTask(task);
+    setFormData({
+      title: task.title,
+      description: task.description || '',
+      priority: task.priority || '',
+      status: task.status || '',
+      assigneeId: task.assignee?.id || '',
+      boardName: task.boardName || '',
+    });
+    setOpenModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setOpenModal(false);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleUpdateTask = async () => {
+    try {
+      await axios.put(
+        `http://localhost:8080/api/v1/tasks/update/${selectedTask.id}`,
+        {
+          title: formData.title,
+          description: formData.description,
+          priority: formData.priority,
+          status: formData.status,
+          assigneeId: formData.assigneeId,
+        },
+        { headers: { 'Content-Type': 'application/json' } }
+      );
+
+      // Обновляем локальное состояние
+      setBoard(prev => prev.map(task => 
+        task.id === selectedTask.id ? { 
+          ...task, 
+          ...formData,
+          assignee: users.find(u => u.id === formData.assigneeId) 
+        } : task
+      ));
+
+      handleCloseModal();
+    } catch (error) {
+      console.error("Ошибка при обновлении задачи:", error);
+      alert("Не удалось обновить задачу");
+    }
+  };
 
   if (loading) {
     return (
@@ -101,7 +179,7 @@ function BoardPage() {
                         cursor: 'pointer',
                         '&:hover': { boxShadow: 2 },
                       }}
-                      onClick={() => console.log('Edit task', task.id)}
+                      onClick={() => handleCardClick(task)}
                     >
                       <CardContent>
                         <Typography>{task.title}</Typography>
@@ -130,7 +208,7 @@ function BoardPage() {
                         cursor: 'pointer',
                         "&:hover": { boxShadow: 2 }
                       }}
-                      onClick={() => console.log("Edit task", task.id)}
+                      onClick={() => handleCardClick(task)}
                     >
                       <CardContent>
                         <Typography>{task.title}</Typography>
@@ -159,7 +237,7 @@ function BoardPage() {
                         cursor: "pointer",
                         "&:hover": { boxShadow: 2 }
                       }}
-                      onClick={() => console.log("Edit task", task.id)}
+                      onClick={() => handleCardClick(task)}
                     >
                       <CardContent>
                         <Typography>{task.title}</Typography>
@@ -171,6 +249,16 @@ function BoardPage() {
           </Paper>
         </Box>
       </Box>
+      <TaskModal
+        open={openModal}
+        onClose={handleCloseModal}
+        task={selectedTask}
+        formData={formData}
+        users={users}
+        onInputChange={handleInputChange}
+        onUpdateTask={handleUpdateTask}
+        mode="edit"
+      />
     </Container>
   );
 }

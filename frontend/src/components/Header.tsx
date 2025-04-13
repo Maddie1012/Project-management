@@ -43,7 +43,9 @@ export default function Header({onCreateClick}) {
         <Button
           color="secondary"
           variant="contained"
-          onClick={onCreateClick} // Изменили здесь
+          onClick={() => {
+            onCreateClick(); // Вызываем функцию создания
+          }}
           sx={{
             backgroundColor: '#00aaff',
             '&:hover': { backgroundColor: '#0099f7' },
