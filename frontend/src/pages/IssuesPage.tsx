@@ -180,25 +180,24 @@ function IssuesPage() {
     }
   };
 
-  // Создание новой задачи
-// Создание новой задачи
+
   const handleCreateTask = async () => {
     try {
-      // Находим первую задачу с таким же boardName, чтобы получить boardId
       const referenceTask = tasks.find(task => task.boardName === formData.boardName);
       
       if (!referenceTask) {
         throw new Error('Не удалось найти boardId для выбранного проекта');
       }
-
+  
       const payload = {
         title: formData.title,
         description: formData.description,
         priority: formData.priority,
         assigneeId: formData.assigneeId,
-        boardId: referenceTask.boardId, // Используем boardId из существующей задачи
+        boardId: referenceTask.boardId,
+        status: formData.status || 'Backlog', // Добавляем статус из формы или по умолчанию
       };
-      console.log(payload)
+  
       const response = await axios.post(
         'http://localhost:8080/api/v1/tasks/create',
         payload,
@@ -209,14 +208,21 @@ function IssuesPage() {
           },
         }
       );
-
+  
+      // Создаем полный объект задачи со всеми необходимыми данными
       const newTask = {
         ...response.data,
+        id: response.data.id || Date.now(), // Используем ID из ответа или временный
+        title: formData.title,
+        description: formData.description,
+        priority: formData.priority,
+        status: formData.status || 'Backlog',
         assignee: users.find(user => user.id === formData.assigneeId) || null,
-        boardName: formData.boardName, // Сохраняем для отображения в UI
-        boardId: referenceTask.boardId, // Добавляем boardId
+        boardName: formData.boardName,
+        boardId: referenceTask.boardId,
+        createdAt: new Date().toISOString(), // Добавляем дату создания
       };
-
+  
       setTasks(prevTasks => [...prevTasks, newTask]);
       setOpenModal(false);
     } catch (error) {
@@ -269,9 +275,9 @@ function IssuesPage() {
             label="Статус"
           >
             <MenuItem value="">Все статусы</MenuItem>
-            <MenuItem value="Backlog">Backlog</MenuItem>
-            <MenuItem value="InProgress">In Progress</MenuItem>
-            <MenuItem value="Done">Done</MenuItem>
+            <MenuItem value="Backlog">Сделать</MenuItem>
+            <MenuItem value="InProgress">В процессе</MenuItem>
+            <MenuItem value="Done">Сделано</MenuItem>
           </Select>
         </FormControl>
 
