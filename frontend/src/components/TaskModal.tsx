@@ -22,6 +22,9 @@ const TaskModal = ({
   isIssuesPage = false,
   mode = 'edit', // 'edit' или 'create'
 }) => {
+  // Проверяем, заполнены ли обязательные поля
+  const isFormValid = formData.title && formData.description;
+
   return (
     <Modal open={open} onClose={onClose} aria-labelledby="task-modal-title">
       <Box
@@ -51,6 +54,8 @@ const TaskModal = ({
             onChange={onInputChange}
             fullWidth
             required
+            error={!formData.title}
+            helperText={!formData.title ? "Это поле обязательно для заполнения" : ""}
           />
 
           <TextField
@@ -61,6 +66,9 @@ const TaskModal = ({
             multiline
             rows={4}
             fullWidth
+            required
+            error={!formData.description}
+            helperText={!formData.description ? "Это поле обязательно для заполнения" : ""}
           />
 
           <FormControl fullWidth>
@@ -145,6 +153,7 @@ const TaskModal = ({
                 variant="contained"
                 color="primary"
                 onClick={onUpdateTask}
+                disabled={!isFormValid}
               >
                 Обновить
               </Button>
@@ -153,6 +162,7 @@ const TaskModal = ({
                 variant="contained"
                 color="primary"
                 onClick={onCreateTask}
+                disabled={!isFormValid}
               >
                 Создать
               </Button>

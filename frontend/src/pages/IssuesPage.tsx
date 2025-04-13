@@ -187,7 +187,6 @@ function IssuesPage() {
         title: formData.title,
         description: formData.description,
         priority: formData.priority,
-        status: formData.status,
         assigneeId: formData.assigneeId,
         boardName: formData.boardName,
       };
