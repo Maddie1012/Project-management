@@ -46,7 +46,6 @@ function IssuesPage({ modalOpen = false, onModalClose }) {
   });
   const [modalMode, setModalMode] = useState('edit');
 
-
   useEffect(() => {
     if (modalOpen) {
       handleCreateClick();
@@ -55,10 +54,10 @@ function IssuesPage({ modalOpen = false, onModalClose }) {
 
   const handleCloseModal = () => {
     setOpenModal(false);
-    onModalClose?.(); // Вызываем колбэк закрытия
+    onModalClose?.();
   };
 
-  // Загрузка задач
+  // загрузка задач
   useEffect(() => {
     const fetchTasks = async () => {
       try {
@@ -73,7 +72,7 @@ function IssuesPage({ modalOpen = false, onModalClose }) {
     fetchTasks();
   }, []);
 
-  // Загрузка пользователей
+  // загрузка пользователей
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -86,7 +85,7 @@ function IssuesPage({ modalOpen = false, onModalClose }) {
     fetchUsers();
   }, []);
 
-  const handleCardClick = (task) => {
+  const handleCardClick = task => {
     setSelectedTask(task);
     setFormData({
       title: task.title,
@@ -114,22 +113,21 @@ function IssuesPage({ modalOpen = false, onModalClose }) {
     setOpenModal(true);
   };
 
-
-  const handleInputChange = (e) => {
+  const handleInputChange = e => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSearchChange = (e) => {
+  const handleSearchChange = e => {
     setSearchTerm(e.target.value);
   };
 
-  const handleFilterChange = (e) => {
+  const handleFilterChange = e => {
     const { name, value } = e.target;
     setFilters(prev => ({ ...prev, [name]: value }));
   };
 
-  // Фильтрация задач
+  // фильтрация задач
   const filteredTasks = tasks.filter(task => {
     const searchLower = searchTerm.toLowerCase();
     const matchesSearch = 
@@ -142,11 +140,11 @@ function IssuesPage({ modalOpen = false, onModalClose }) {
       filters.status === '' || task.status === filters.status;
     const matchesBoard =
       filters.board === '' || task.boardName === filters.board;
-    
+
     return matchesSearch && matchesStatus && matchesBoard;
   });
 
-  // Обновление задачи
+  // обновление задачи
   const handleUpdateTask = async () => {
     try {
       const payload = {
@@ -176,9 +174,7 @@ function IssuesPage({ modalOpen = false, onModalClose }) {
       };
 
       setTasks(prevTasks => 
-        prevTasks.map(task => 
-          task.id === updatedTask.id ? updatedTask : task
-        )
+        prevTasks.map(task => (task.id === updatedTask.id ? updatedTask : task))
       );
 
       setOpenModal(false);
@@ -189,15 +185,16 @@ function IssuesPage({ modalOpen = false, onModalClose }) {
     }
   };
 
-
   const handleCreateTask = async () => {
     try {
-      const referenceTask = tasks.find(task => task.boardName === formData.boardName);
-      
+      const referenceTask = tasks.find(
+        task => task.boardName === formData.boardName
+      );
+
       if (!referenceTask) {
         throw new Error('Не удалось найти boardId для выбранного проекта');
       }
-  
+
       const payload = {
         title: formData.title,
         description: formData.description,
@@ -206,7 +203,7 @@ function IssuesPage({ modalOpen = false, onModalClose }) {
         boardId: referenceTask.boardId,
         status: formData.status || 'Backlog',
       };
-  
+
       const response = await axios.post(
         'http://localhost:8080/api/v1/tasks/create',
         payload,
@@ -217,7 +214,7 @@ function IssuesPage({ modalOpen = false, onModalClose }) {
           },
         }
       );
-  
+
       const newTask = {
         ...response.data,
         id: response.data.id || Date.now(),
@@ -228,9 +225,9 @@ function IssuesPage({ modalOpen = false, onModalClose }) {
         assignee: users.find(user => user.id === formData.assigneeId) || null,
         boardName: formData.boardName,
         boardId: referenceTask.boardId,
-        createdAt: new Date().toISOString(), 
+        createdAt: new Date().toISOString(),
       };
-  
+
       setTasks(prevTasks => [...prevTasks, newTask]);
       setOpenModal(false);
       onModalClose?.();
@@ -321,7 +318,7 @@ function IssuesPage({ modalOpen = false, onModalClose }) {
 
       {filteredTasks.length > 0 ? (
         <Grid container spacing={2} flexDirection={'column'}>
-          {filteredTasks.map((task) => (
+          {filteredTasks.map(task => (
             <Grid item xs={12} key={task.id}>
               <Card
                 sx={{

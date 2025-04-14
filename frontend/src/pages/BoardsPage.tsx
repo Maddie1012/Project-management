@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import TaskModal from '../components/TaskModal';
 import {
@@ -34,7 +34,6 @@ function BoardsPage({ modalOpen = false, onModalClose }) {
     boardName: '',
   });
 
-
   useEffect(() => {
     axios
       .get('http://localhost:8080/api/v1/tasks', {
@@ -44,18 +43,18 @@ function BoardsPage({ modalOpen = false, onModalClose }) {
       })
       .then(response => {
         setTasks(response.data.data);
-        
-        // Получаем уникальные доски
+
+        // получение уникальных досок
         const boardsMap = new Map();
         response.data.data.forEach(task => {
           if (task.boardName && task.boardId) {
             boardsMap.set(task.boardId, {
               boardName: task.boardName,
-              boardId: task.boardId
+              boardId: task.boardId,
             });
           }
         });
-        
+
         setUniqueBoards(Array.from(boardsMap.values()));
         setLoading(false);
       })
@@ -69,7 +68,6 @@ function BoardsPage({ modalOpen = false, onModalClose }) {
         setLoading(false);
       });
   }, []);
-
 
   useEffect(() => {
     if (modalOpen) {
@@ -93,11 +91,10 @@ function BoardsPage({ modalOpen = false, onModalClose }) {
 
   const handleCloseModal = () => {
     setOpenModal(false);
-    onModalClose?.(); // Вызываем колбэк закрытия
+    onModalClose?.();
   };
 
-
-  const handleInputChange = (e) => {
+  const handleInputChange = e => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
@@ -130,10 +127,8 @@ function BoardsPage({ modalOpen = false, onModalClose }) {
         assignee: users.find(user => user.id === formData.assigneeId) || null,
       };
 
-      setTasks(prevTasks => 
-        prevTasks.map(task => 
-          task.id === updatedTask.id ? updatedTask : task
-        )
+      setTasks(prevTasks =>
+        prevTasks.map(task => (task.id === updatedTask.id ? updatedTask : task))
       );
 
       setOpenModal(false);
@@ -144,15 +139,16 @@ function BoardsPage({ modalOpen = false, onModalClose }) {
     }
   };
 
-
   const handleCreateTask = async () => {
     try {
-      const referenceTask = tasks.find(task => task.boardName === formData.boardName);
-      
+      const referenceTask = tasks.find(
+        task => task.boardName === formData.boardName
+      );
+
       if (!referenceTask) {
         throw new Error('Не удалось найти boardId для выбранного проекта');
       }
-  
+
       const payload = {
         title: formData.title,
         description: formData.description,
@@ -161,7 +157,7 @@ function BoardsPage({ modalOpen = false, onModalClose }) {
         boardId: referenceTask.boardId,
         status: formData.status || 'Backlog',
       };
-  
+
       const response = await axios.post(
         'http://localhost:8080/api/v1/tasks/create',
         payload,
@@ -172,7 +168,7 @@ function BoardsPage({ modalOpen = false, onModalClose }) {
           },
         }
       );
-  
+
       const newTask = {
         ...response.data,
         id: response.data.id || Date.now(),
@@ -183,9 +179,9 @@ function BoardsPage({ modalOpen = false, onModalClose }) {
         assignee: users.find(user => user.id === formData.assigneeId) || null,
         boardName: formData.boardName,
         boardId: referenceTask.boardId,
-        createdAt: new Date().toISOString(), 
+        createdAt: new Date().toISOString(),
       };
-  
+
       setTasks(prevTasks => [...prevTasks, newTask]);
       setOpenModal(false);
       onModalClose?.();
@@ -240,12 +236,12 @@ function BoardsPage({ modalOpen = false, onModalClose }) {
                     component={Link}
                     to={`/boards/${board.boardId}?boardName=${encodeURIComponent(board.boardName)}`}
                     sx={{
-                      textDecoration: 'none', // Убираем подчеркивание
-                      color: 'inherit', // Наследуем цвет текста
-                      textTransform: 'none', // Убираем автоматическое преобразование в верхний регистр
+                      textDecoration: 'none',
+                      color: 'inherit',
+                      textTransform: 'none',
                       '&:hover': {
-                        textDecoration: 'none', // Убираем подчеркивание при наведении
-                        backgroundColor: 'rgba(0, 0, 0, 0.04)', // Легкий эффект при наведении
+                        textDecoration: 'none',
+                        backgroundColor: 'rgba(0, 0, 0, 0.04)',
                       },
                     }}
                   >

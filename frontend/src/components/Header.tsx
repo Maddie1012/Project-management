@@ -1,9 +1,7 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { AppBar, Toolbar, Button, Box } from '@mui/material';
 
-export default function Header({onCreateClick}) {
-  const navigate = useNavigate();
-
+export default function Header({ onCreateClick }) {
   return (
     <AppBar position="static">
       <Toolbar
@@ -44,7 +42,7 @@ export default function Header({onCreateClick}) {
           color="secondary"
           variant="contained"
           onClick={() => {
-            onCreateClick(); // Вызываем функцию создания
+            onCreateClick();
           }}
           sx={{
             backgroundColor: '#00aaff',
@@ -58,4 +56,3 @@ export default function Header({onCreateClick}) {
     </AppBar>
   );
 }
-

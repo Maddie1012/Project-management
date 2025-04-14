@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useParams } from "react-router-dom";
-import { useLocation } from "react-router-dom";
-import axios from "axios";
+import { useParams, useLocation } from 'react-router-dom';
+import axios from 'axios';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import TaskModal from "../components/TaskModal";
+import TaskModal from '../components/TaskModal';
 import {
   Container,
   CircularProgress,
@@ -13,7 +12,7 @@ import {
   Card,
   CardContent,
   Box,
-} from "@mui/material";
+} from '@mui/material';
 
 function BoardPage({ modalOpen = false, onModalClose }) {
   const [users, setUsers] = useState([]);
@@ -39,16 +38,18 @@ function BoardPage({ modalOpen = false, onModalClose }) {
     boardName: '',
   });
 
-  // Определяем статусы для колонок
+  // определение статусов для колонок
   const statuses = [
     { id: 'Backlog', title: 'To Do', color: '#f5f5f5' },
     { id: 'InProgress', title: 'In Progress', color: '#fff8e1' },
-    { id: 'Done', title: 'Done', color: '#e8f5e9' }
+    { id: 'Done', title: 'Done', color: '#e8f5e9' },
   ];
 
   useEffect(() => {
     if (taskIdFromUrl && board && !manuallyClosed) {
-      const taskToOpen = board.find(task => task.id === parseInt(taskIdFromUrl));
+      const taskToOpen = board.find(
+        task => task.id === parseInt(taskIdFromUrl)
+      );
       if (taskToOpen) {
         handleCardClick(taskToOpen);
       }
@@ -59,11 +60,11 @@ function BoardPage({ modalOpen = false, onModalClose }) {
     const fetchUsers = async () => {
       try {
         const response = await axios.get('http://localhost:8080/api/v1/users', {
-          headers: { Accept: "application/json" }
+          headers: { Accept: 'application/json' },
         });
         setUsers(response.data.data);
       } catch (err) {
-        console.error("Ошибка при загрузке пользователей:", err);
+        console.error('Ошибка при загрузке пользователей:', err);
       }
     };
     fetchUsers();
@@ -73,15 +74,15 @@ function BoardPage({ modalOpen = false, onModalClose }) {
     axios
       .get(`http://localhost:8080/api/v1/boards/${id}`, {
         headers: {
-          Accept: "application/json",
+          Accept: 'application/json',
         },
       })
-      .then((response) => {
+      .then(response => {
         setBoard(response.data.data);
         setLoading(false);
       })
-      .catch((err) => {
-        console.error("Ошибка при запросе:", {
+      .catch(err => {
+        console.error('Ошибка при запросе:', {
           message: err.message,
           status: err.response?.status,
           data: err.response?.data,
@@ -111,7 +112,7 @@ function BoardPage({ modalOpen = false, onModalClose }) {
     setOpenModal(true);
   };
 
-  const handleCardClick = (task) => {
+  const handleCardClick = task => {
     setSelectedTask(task);
     setFormData({
       title: task.title,
@@ -134,15 +135,17 @@ function BoardPage({ modalOpen = false, onModalClose }) {
     onModalClose?.();
   };
 
-  const handleInputChange = (e) => {
+  const handleInputChange = e => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleCreateTask = async () => {
     try {
-      const referenceTask = board?.find(task => task.boardName === formData.boardName);
-      
+      const referenceTask = board?.find(
+        task => task.boardName === formData.boardName
+      );
+
       if (!referenceTask) {
         throw new Error('Не удалось найти boardId для выбранного проекта');
       }
@@ -176,7 +179,7 @@ function BoardPage({ modalOpen = false, onModalClose }) {
         assignee: users.find(user => user.id === formData.assigneeId) || null,
         boardName: formData.boardName,
         boardId: referenceTask.boardId,
-        createdAt: new Date().toISOString(), 
+        createdAt: new Date().toISOString(),
       };
 
       setBoard(prev => [...(prev || []), newTask]);
@@ -202,35 +205,41 @@ function BoardPage({ modalOpen = false, onModalClose }) {
       );
 
       if (board) {
-        setBoard(prev => prev.map(task => 
-          task.id === selectedTask.id ? { 
-            ...task, 
-            ...formData,
-            assignee: users.find(u => u.id === formData.assigneeId) 
-          } : task
-        ));
+        setBoard(prev =>
+          prev.map(task =>
+            task.id === selectedTask.id
+              ? {
+                  ...task,
+                  ...formData,
+                  assignee: users.find(u => u.id === formData.assigneeId),
+                }
+              : task
+          )
+        );
       }
 
       handleCloseModal();
     } catch (error) {
-      console.error("Ошибка при обновлении задачи:", error);
+      console.error('Ошибка при обновлении задачи:', error);
     }
   };
 
-  const onDragEnd = async (result) => {
+  const onDragEnd = async result => {
     const { destination, source, draggableId } = result;
 
-    if (!destination || 
-        (destination.droppableId === source.droppableId && 
-         destination.index === source.index)) {
+    if (
+      !destination ||
+      (destination.droppableId === source.droppableId &&
+        destination.index === source.index)
+    ) {
       return;
     }
 
     const taskId = parseInt(draggableId);
     const newStatus = destination.droppableId;
-    
+
     try {
-      const updatedBoard = board.map(task => 
+      const updatedBoard = board.map(task =>
         task.id === taskId ? { ...task, status: newStatus } : task
       );
       setBoard(updatedBoard);
@@ -240,9 +249,8 @@ function BoardPage({ modalOpen = false, onModalClose }) {
         { status: newStatus },
         { headers: { 'Content-Type': 'application/json' } }
       );
-
     } catch (error) {
-      console.error("Ошибка при обновлении статуса:", error);
+      console.error('Ошибка при обновлении статуса:', error);
       setBoard(board);
     }
   };
@@ -251,7 +259,7 @@ function BoardPage({ modalOpen = false, onModalClose }) {
     return (
       <Container
         maxWidth="sm"
-        sx={{ display: "flex", justifyContent: "center", mt: 4 }}
+        sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}
       >
         <CircularProgress />
       </Container>
@@ -269,10 +277,11 @@ function BoardPage({ modalOpen = false, onModalClose }) {
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <Container maxWidth={false} sx={{ py: 4, px: 3 }}>
-        <Box sx={{ maxWidth: 1200, mx: "auto" }}>
+        <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
           <Box sx={{ px: 3 }}>
             <Typography variant="h4" gutterBottom>
-              {boardNameFromUrl || (board?.length > 0 ? board[0].boardName : "Название проекта")}
+              {boardNameFromUrl ||
+                (board?.length > 0 ? board[0].boardName : 'Название проекта')}
             </Typography>
             <Typography variant="subtitle1" gutterBottom sx={{ mb: 3 }}>
               Все задачи
@@ -281,24 +290,28 @@ function BoardPage({ modalOpen = false, onModalClose }) {
 
           <Box
             sx={{
-              display: "flex",
+              display: 'flex',
               gap: 3,
-              overflowX: "auto",
+              overflowX: 'auto',
               pb: 2,
               px: 3,
-              width: "100%",
+              width: '100%',
             }}
           >
-            {statuses.map((status) => (
+            {statuses.map(status => (
               <Droppable key={status.id} droppableId={status.id}>
-                {(provided) => (
-                  <Paper 
-                    elevation={2} 
+                {provided => (
+                  <Paper
+                    elevation={2}
                     sx={{ width: 350, flexShrink: 0 }}
                     ref={provided.innerRef}
                     {...provided.droppableProps}
                   >
-                    <Box p={2} bgcolor={status.color} borderRadius="4px 4px 0 0">
+                    <Box
+                      p={2}
+                      bgcolor={status.color}
+                      borderRadius="4px 4px 0 0"
+                    >
                       <Typography variant="h6" fontWeight="bold">
                         {status.title}
                       </Typography>
@@ -307,9 +320,9 @@ function BoardPage({ modalOpen = false, onModalClose }) {
                       {board
                         ?.filter(task => task.status === status.id)
                         .map((task, index) => (
-                          <Draggable 
-                            key={task.id} 
-                            draggableId={String(task.id)} 
+                          <Draggable
+                            key={task.id}
+                            draggableId={String(task.id)}
                             index={index}
                           >
                             {(provided, snapshot) => (
@@ -317,12 +330,16 @@ function BoardPage({ modalOpen = false, onModalClose }) {
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
-                                sx={{ 
-                                  mb: 2, 
+                                sx={{
+                                  mb: 2,
                                   cursor: 'pointer',
                                   '&:hover': { boxShadow: 2 },
-                                  backgroundColor: snapshot.isDragging ? '#f0f0f0' : 'inherit',
-                                  transform: snapshot.isDragging ? 'rotate(2deg)' : 'none',
+                                  backgroundColor: snapshot.isDragging
+                                    ? '#f0f0f0'
+                                    : 'inherit',
+                                  transform: snapshot.isDragging
+                                    ? 'rotate(2deg)'
+                                    : 'none',
                                 }}
                                 onClick={() => handleCardClick(task)}
                               >

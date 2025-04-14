@@ -1,6 +1,6 @@
 version: '3.8'
 
-services:  # ← Этот ключ обязателен!
+services:
   api:
     build: ./server
     ports:

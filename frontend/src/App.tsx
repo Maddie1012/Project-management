@@ -22,25 +22,27 @@ function App() {
             />
           }
         />
-        <Route 
-          path="/boards" 
+        <Route
+          path="/boards"
           element={
-            <BoardsPage 
-              modalOpen={modalOpen} 
-              onModalClose={() => setModalOpen(false)} 
+            <BoardsPage
+              modalOpen={modalOpen}
+              onModalClose={() => setModalOpen(false)}
             />
-          } 
+          }
         />
         <Route
           path="/boards/:id"
           element={
             <BoardPage
               modalOpen={modalOpen}
-              onModalClose={() => setModalOpen(false)}  />}></Route>
+              onModalClose={() => setModalOpen(false)}
+            />
+          }
+        ></Route>
       </Routes>
     </BrowserRouter>
   );
 }
 
 export default App;
-

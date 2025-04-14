@@ -33,7 +33,7 @@ const TaskModal = ({
     assigneeId: false
   });
 
-  const handleInputChange = (e) => {
+  const handleInputChange = e => {
     const { name } = e.target;
     if (!touchedFields[name]) {
       setTouchedFields(prev => ({
@@ -44,13 +44,13 @@ const TaskModal = ({
     onInputChange(e);
   };
 
-  const isFormValid = 
-    formData.title && 
+  const isFormValid =
+    formData.title &&
     formData.description &&
     formData.boardName &&
     formData.priority &&
     formData.status &&
-    formData.assigneeId; 
+    formData.assigneeId;
 
   return (
     <Modal open={open} onClose={onClose} aria-labelledby="task-modal-title">
@@ -72,7 +72,7 @@ const TaskModal = ({
         <Typography variant="h5" component="h2" sx={{ mb: 3 }}>
           {mode === 'edit' ? 'Редактирование задачи' : 'Создание новой задачи'}
         </Typography>
-        
+
         <Box display={'flex'} flexDirection={'column'} gap={'20px'}>
           <TextField
             name="title"
@@ -83,7 +83,11 @@ const TaskModal = ({
             fullWidth
             required
             error={!formData.title && touchedFields.title}
-            helperText={!formData.title && touchedFields.title ? "Это поле обязательно для заполнения" : ""}
+            helperText={
+              !formData.title && touchedFields.title
+                ? 'Это поле обязательно для заполнения'
+                : ''
+            }
           />
 
           <TextField
@@ -91,20 +95,26 @@ const TaskModal = ({
             label="Описание"
             value={formData.description}
             onChange={handleInputChange}
-            onBlur={() => setTouchedFields(prev => ({ ...prev, description: true }))}
+            onBlur={() =>
+              setTouchedFields(prev => ({ ...prev, description: true }))
+            }
             multiline
             rows={4}
             fullWidth
             required
             error={!formData.description && touchedFields.description}
-            helperText={!formData.description && touchedFields.description ? "Это поле обязательно для заполнения" : ""}
+            helperText={
+              !formData.description && touchedFields.description
+                ? 'Это поле обязательно для заполнения'
+                : ''
+            }
           />
 
-          <FormControl 
-            fullWidth 
-            required 
+          <FormControl
+            fullWidth
+            required
             error={!formData.boardName && touchedFields.boardName}
-            disabled={disableProjectField} // Блокируем, если disableProjectField=true
+            disabled={disableProjectField}
           >
             <InputLabel>Проект</InputLabel>
             <Select
@@ -112,10 +122,12 @@ const TaskModal = ({
               value={formData.boardName}
               label="Проект"
               onChange={handleInputChange}
-              onBlur={() => setTouchedFields(prev => ({ ...prev, boardName: true }))}
+              onBlur={() =>
+                setTouchedFields(prev => ({ ...prev, boardName: true }))
+              }
               required
               error={!formData.boardName && touchedFields.boardName}
-              disabled={disableProjectField} // Блокируем и Select
+              disabled={disableProjectField}
             >
               <MenuItem value="Редизайн карточки товара">
                 Редизайн карточки товара
@@ -141,14 +153,20 @@ const TaskModal = ({
             )}
           </FormControl>
 
-          <FormControl fullWidth required error={!formData.priority && touchedFields.priority}>
+          <FormControl
+            fullWidth
+            required
+            error={!formData.priority && touchedFields.priority}
+          >
             <InputLabel>Приоритет</InputLabel>
             <Select
               name="priority"
               value={formData.priority}
               label="Приоритет"
               onChange={handleInputChange}
-              onBlur={() => setTouchedFields(prev => ({ ...prev, priority: true }))}
+              onBlur={() =>
+                setTouchedFields(prev => ({ ...prev, priority: true }))
+              }
               required
               error={!formData.priority && touchedFields.priority}
             >
@@ -163,14 +181,20 @@ const TaskModal = ({
             )}
           </FormControl>
 
-          <FormControl fullWidth required error={!formData.status && touchedFields.status}>
+          <FormControl
+            fullWidth
+            required
+            error={!formData.status && touchedFields.status}
+          >
             <InputLabel>Статус</InputLabel>
             <Select
               name="status"
               value={formData.status}
               label="Статус"
               onChange={handleInputChange}
-              onBlur={() => setTouchedFields(prev => ({ ...prev, status: true }))}
+              onBlur={() =>
+                setTouchedFields(prev => ({ ...prev, status: true }))
+              }
               required
               error={!formData.status && touchedFields.status}
             >
@@ -185,14 +209,20 @@ const TaskModal = ({
             )}
           </FormControl>
 
-          <FormControl fullWidth required error={!formData.assigneeId && touchedFields.assigneeId}>
+          <FormControl
+            fullWidth
+            required
+            error={!formData.assigneeId && touchedFields.assigneeId}
+          >
             <InputLabel>Исполнитель</InputLabel>
             <Select
               name="assigneeId"
               value={formData.assigneeId}
               label="Исполнитель"
               onChange={handleInputChange}
-              onBlur={() => setTouchedFields(prev => ({ ...prev, assigneeId: true }))}
+              onBlur={() =>
+                setTouchedFields(prev => ({ ...prev, assigneeId: true }))
+              }
               required
               error={!formData.assigneeId && touchedFields.assigneeId}
             >
@@ -209,9 +239,7 @@ const TaskModal = ({
             )}
           </FormControl>
 
-          <Box
-            sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}
-          >
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
             {mode === 'edit' ? (
               <Button
                 variant="contained"
@@ -231,7 +259,7 @@ const TaskModal = ({
                 Создать
               </Button>
             )}
-            
+
             {isIssuesPage && mode === 'edit' && (
               <Button
                 variant="outlined"
